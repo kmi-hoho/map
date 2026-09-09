@@ -6,10 +6,22 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }
+        
+        /* 상단 헤더 가운데 정렬 적용 */
         #header { 
-            padding: 10px 15px; background-color: #f8f9fa; border-bottom: 1px solid #ddd; 
-            z-index: 1000; position: relative; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; font-size: 14px;
+            padding: 10px 15px; 
+            background-color: #f8f9fa; 
+            border-bottom: 1px solid #ddd; 
+            z-index: 1000; 
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; /* 가운데 정렬 */
+            gap: 15px; 
+            flex-wrap: wrap; 
+            font-size: 14px;
         }
+        
         .header-divider { border-left: 1px solid #ccc; height: 24px; }
         input[type="text"], input[type="date"], select { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 5px 10px; border: 1px solid #999; background-color: #fff; cursor: pointer; border-radius: 4px; }
@@ -21,15 +33,13 @@
         .popup-table td { border: 1px solid #c8d4e3; padding: 6px; white-space: nowrap; }
         .leaflet-popup-content { min-width: 350px !important; }
         
-        /* 팝업 테이블 내 강조 스타일 */
-        .expiring-black td { background-color: #eeeeee; color: #000000; font-weight: bold; } /* 만료 초과 */
+        .expiring-black td { background-color: #eeeeee; color: #000000; font-weight: bold; }
         .expiring-red td { background-color: #ffe6e6; color: #d93025; font-weight: bold; }
         .expiring-orange td { background-color: #fff3e0; color: #e65100; font-weight: bold; }
         .expiring-yellow td { background-color: #fffde7; color: #f57f17; font-weight: bold; }
         
         .d-day-text { font-size: 11px; margin-left: 4px; }
         
-        /* 툴팁 스타일 */
         .leaflet-tooltip { 
             font-family: 'Malgun Gothic', sans-serif; font-weight: bold; font-size: 12px; 
             padding: 6px 10px; text-align: center; line-height: 1.4; border-radius: 4px; border: 1px solid #ccc;
@@ -149,10 +159,10 @@
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                                     diffDaysForDday = diffDays;
                                     
-                                    if (diffDays < 0) urgencyLevel = 0; // 이미 지남 (검은색)
-                                    else if (diffDays <= 30) urgencyLevel = 1; // 30일 이내 (빨강)
-                                    else if (diffDays <= 60) urgencyLevel = 2; // 60일 이내 (주황)
-                                    else if (diffDays <= 90) urgencyLevel = 3; // 90일 이내 (노랑)
+                                    if (diffDays < 0) urgencyLevel = 0;
+                                    else if (diffDays <= 30) urgencyLevel = 1;
+                                    else if (diffDays <= 60) urgencyLevel = 2;
+                                    else if (diffDays <= 90) urgencyLevel = 3;
                                 }
                             }
 
