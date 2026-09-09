@@ -2,13 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>지진관측장비 검정대상</title>
-    <!-- Leaflet CSS -->
+    <title>검정대상 지도 뷰어</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Leaflet MarkerCluster CSS 추가 -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-    
     <style>
         body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }
         #header { 
@@ -20,17 +15,22 @@
         button { padding: 5px 10px; border: 1px solid #999; background-color: #fff; cursor: pointer; border-radius: 4px; }
         button:hover { background-color: #e9ecef; }
         #map { height: calc(100vh - 55px); width: 100%; }
+        
         .popup-table { border-collapse: collapse; width: 100%; font-size: 12px; text-align: center; }
         .popup-table th { background-color: #f2f6fc; color: #333; border: 1px solid #c8d4e3; padding: 6px; white-space: nowrap; }
         .popup-table td { border: 1px solid #c8d4e3; padding: 6px; white-space: nowrap; }
         .leaflet-popup-content { min-width: 350px !important; }
-        .expiring-row td { background-color: #fff0f0; color: #d93025; font-weight: bold; }
+        
+        /* 만료 임박 일수에 따른 행 강조 스타일 */
+        .expiring-red td { background-color: #ffe6e6; color: #d93025; font-weight: bold; } /* 30일 이내 */
+        .expiring-orange td { background-color: #fff3e0; color: #e65100; font-weight: bold; } /* 60일 이내 */
+        .expiring-yellow td { background-color: #fffde7; color: #f57f17; font-weight: bold; } /* 90일 이내 */
     </style>
 </head>
 <body>
 
 <div id="header">
-    <div><b>지진관측장비 검정대상</b></div>
+    <div><b>검정대상 지도 뷰어</b></div>
     <div class="header-divider"></div>
     <div>
         <select id="searchCategory">
@@ -54,41 +54,27 @@
 
 <div id="map"></div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<!-- Leaflet MarkerCluster JS 추가 -->
-<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-<!-- PapaParse -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
 <script>
     const map = L.map('map').setView([36.5, 127.5], 7);
     
-    // 다시 OpenStreetMap으로 변경
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // 일반 마커 레이어 대신 클러스터 그룹 사용 (마커 렌더링 최적화)
-    let markerClusterGroup = L.markerClusterGroup({
-        disableClusteringAtZoom: 14, // 줌 레벨 14 이상이면 클러스터 해제하고 낱개로 표시
-        maxClusterRadius: 50 // 클러스터로 묶이는 반경 설정
-    });
-    map.addLayer(markerClusterGroup);
-
+    let markers = L.layerGroup().addTo(map);
     let allDevices = [];
 
-    const blueIcon = new L.Icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-    });
+    // 마커 아이콘 색상별 정의
+    const getIconUrl = (color) => `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`;
+    const iconOptions = { shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] };
 
-    const redIcon = new L.Icon({
-        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-        iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-    });
+    const redIcon = new L.Icon({ iconUrl: getIconUrl('red'), ...iconOptions });
+    const orangeIcon = new L.Icon({ iconUrl: getIconUrl('orange'), ...iconOptions });
+    const yellowIcon = new L.Icon({ iconUrl: getIconUrl('gold'), ...iconOptions }); // Leaflet 기본 제공 색상 중 gold가 노란색 역할
+    const blueIcon = new L.Icon({ iconUrl: getIconUrl('blue'), ...iconOptions });
 
     function formatDate(dateObj) {
         const yyyy = dateObj.getFullYear();
@@ -139,19 +125,29 @@
                                 finalDateStr = validPeriodDate;
                             }
 
-                            let isExpiringSoon = false;
+                            // 남은 일수에 따른 등급 판별 (기본값 999: 안전)
+                            let urgencyLevel = 999; 
+                            
                             if (finalDateStr) {
                                 const expDate = new Date(finalDateStr);
                                 if (!isNaN(expDate)) {
                                     const diffTime = expDate - today;
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                    if (diffDays <= 30) isExpiringSoon = true;
+                                    
+                                    if (diffDays <= 30) {
+                                        urgencyLevel = 1; // 30일 이내 (빨강)
+                                    } else if (diffDays <= 60) {
+                                        urgencyLevel = 2; // 60일 이내 (주황)
+                                    } else if (diffDays <= 90) {
+                                        urgencyLevel = 3; // 90일 이내 (노랑)
+                                    }
                                 }
                             }
 
                             allDevices.push({
                                 lat: lat, lng: lng, orgName: getVal('기관명'), branchName: getVal('지점명'),
-                                modelName: getVal('모델명'), serialNum: getVal('제조번호'), latestDate: finalDateStr, isExpiringSoon: isExpiringSoon
+                                modelName: getVal('모델명'), serialNum: getVal('제조번호'), latestDate: finalDateStr, 
+                                urgencyLevel: urgencyLevel
                             });
                         }
                     });
@@ -162,9 +158,7 @@
         .catch(error => alert("데이터를 불러오는 데 실패했습니다: " + error.message));
 
     function applyFiltersAndRender() {
-        // 기존 클러스터 마커 초기화
-        markerClusterGroup.clearLayers();
-        
+        markers.clearLayers();
         const category = document.getElementById('searchCategory').value;
         const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
         const startDate = document.getElementById('startDate').value;
@@ -189,21 +183,28 @@
             if (textMatch && dateMatch) {
                 const locationKey = `${dev.lat}_${dev.lng}`;
                 if (!groupedData[locationKey]) {
-                    groupedData[locationKey] = { lat: dev.lat, lng: dev.lng, devices: [], hasExpiringDevice: false };
+                    groupedData[locationKey] = { lat: dev.lat, lng: dev.lng, devices: [], maxUrgency: 999 };
                 }
                 groupedData[locationKey].devices.push(dev);
-                if (dev.isExpiringSoon) groupedData[locationKey].hasExpiringDevice = true;
+                
+                // 한 지점에 여러 장비가 있을 경우, 가장 심각한(숫자가 작은) 등급을 지점의 대표 등급으로 설정
+                if (dev.urgencyLevel < groupedData[locationKey].maxUrgency) {
+                    groupedData[locationKey].maxUrgency = dev.urgencyLevel;
+                }
             }
         });
-
-        // 클러스터에 추가할 임시 배열 생성
-        const newMarkers = [];
 
         Object.values(groupedData).forEach(group => {
             const devices = group.devices;
             let tableRowsHtml = "";
             devices.forEach((dev, index) => {
-                const rowClass = dev.isExpiringSoon ? ' class="expiring-row"' : '';
+                
+                // 장비의 만료일 등급에 따라 행 CSS 클래스 할당
+                let rowClass = '';
+                if (dev.urgencyLevel === 1) rowClass = ' class="expiring-red"';
+                else if (dev.urgencyLevel === 2) rowClass = ' class="expiring-orange"';
+                else if (dev.urgencyLevel === 3) rowClass = ' class="expiring-yellow"';
+
                 tableRowsHtml += `<tr${rowClass}>`;
                 if (index === 0) {
                     tableRowsHtml += `<td rowspan="${devices.length}">${dev.orgName}</td>`;
@@ -218,15 +219,14 @@
                     <tbody>${tableRowsHtml}</tbody>
                 </table>`;
 
-            const markerIcon = group.hasExpiringDevice ? redIcon : blueIcon;
-            
-            // 지도에 직접 추가하는 대신 마커 객체를 생성하여 배열에 푸시
-            const marker = L.marker([group.lat, group.lng], { icon: markerIcon }).bindPopup(popupContent, { maxWidth: 600 });
-            newMarkers.push(marker);
-        });
+            // 지점의 최고 위험 등급에 따라 마커 색상 결정
+            let markerIcon = blueIcon;
+            if (group.maxUrgency === 1) markerIcon = redIcon;
+            else if (group.maxUrgency === 2) markerIcon = orangeIcon;
+            else if (group.maxUrgency === 3) markerIcon = yellowIcon;
 
-        // 생성된 마커들을 클러스터 그룹에 한 번에 추가
-        markerClusterGroup.addLayers(newMarkers);
+            L.marker([group.lat, group.lng], { icon: markerIcon }).addTo(markers).bindPopup(popupContent, { maxWidth: 600 });
+        });
     }
 
     document.getElementById('searchBtn').addEventListener('click', applyFiltersAndRender);
