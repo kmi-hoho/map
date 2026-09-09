@@ -26,12 +26,14 @@
         .expiring-orange td { background-color: #fff3e0; color: #e65100; font-weight: bold; }
         .expiring-yellow td { background-color: #fffde7; color: #f57f17; font-weight: bold; }
         
-        /* 툴팁 기본 및 색상별 스타일 */
+        /* D-day 강조용 작은 글씨 스타일 */
+        .d-day-text { font-size: 11px; margin-left: 4px; }
+        
+        /* 툴팁 스타일 */
         .leaflet-tooltip { 
             font-family: 'Malgun Gothic', sans-serif; font-weight: bold; font-size: 12px; 
             padding: 6px 10px; text-align: center; line-height: 1.4; border-radius: 4px; border: 1px solid #ccc;
         }
-        /* 마커 색상에 맞춘 툴팁 글씨색 */
         .tooltip-red { color: #d93025; border-color: #d93025; background-color: #fffafa; }
         .tooltip-orange { color: #e65100; border-color: #e65100; background-color: #fffaf5; }
         .tooltip-yellow { color: #f57f17; border-color: #f57f17; background-color: #fffff0; }
@@ -136,12 +138,14 @@
                             }
 
                             let urgencyLevel = 999; 
+                            let diffDaysForDday = null;
                             
                             if (finalDateStr) {
                                 const expDate = new Date(finalDateStr);
                                 if (!isNaN(expDate)) {
                                     const diffTime = expDate - today;
                                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    diffDaysForDday = diffDays;
                                     
                                     if (diffDays <= 30) urgencyLevel = 1;
                                     else if (diffDays <= 60) urgencyLevel = 2;
@@ -152,7 +156,8 @@
                             allDevices.push({
                                 lat: lat, lng: lng, orgName: getVal('기관명'), branchName: getVal('지점명'),
                                 modelName: getVal('모델명'), serialNum: getVal('제조번호'), latestDate: finalDateStr, 
-                                urgencyLevel: urgencyLevel
+                                urgencyLevel: urgencyLevel,
+                                diffDays: diffDaysForDday // D-day 표시를 위해 남은 일수 저장
                             });
                         }
                     });
@@ -208,8 +213,22 @@
         Object.values(groupedData).forEach(group => {
             const devices = group.devices;
             let tableRowsHtml = "";
+            
             devices.forEach((dev, index) => {
                 let rowClass = '';
+                let dDayString = '';
+                
+                // 임박한 장비(90일 이내)인 경우에만 D-day 텍스트 생성
+                if (dev.urgencyLevel <= 3 && dev.diffDays !== null) {
+                    if (dev.diffDays < 0) {
+                        dDayString = `<span class="d-day-text">(D+${Math.abs(dev.diffDays)})</span>`;
+                    } else if (dev.diffDays === 0) {
+                        dDayString = `<span class="d-day-text">(D-Day)</span>`;
+                    } else {
+                        dDayString = `<span class="d-day-text">(D-${dev.diffDays})</span>`;
+                    }
+                }
+
                 if (dev.urgencyLevel === 1) rowClass = ' class="expiring-red"';
                 else if (dev.urgencyLevel === 2) rowClass = ' class="expiring-orange"';
                 else if (dev.urgencyLevel === 3) rowClass = ' class="expiring-yellow"';
@@ -219,7 +238,7 @@
                     tableRowsHtml += `<td rowspan="${devices.length}">${dev.orgName}</td>`;
                     tableRowsHtml += `<td rowspan="${devices.length}">${dev.branchName}</td>`;
                 }
-                tableRowsHtml += `<td>${dev.modelName}</td><td>${dev.serialNum}</td><td>${dev.latestDate}</td></tr>`;
+                tableRowsHtml += `<td>${dev.modelName}</td><td>${dev.serialNum}</td><td>${dev.latestDate} ${dDayString}</td></tr>`;
             });
 
             const popupContent = `
@@ -229,7 +248,7 @@
                 </table>`;
 
             let markerIcon = blueIcon;
-            let tooltipCssClass = 'tooltip-blue'; // 툴팁 기본 CSS 클래스
+            let tooltipCssClass = 'tooltip-blue';
 
             if (group.maxUrgency === 1) {
                 markerIcon = redIcon;
@@ -249,7 +268,6 @@
             L.marker([group.lat, group.lng], { icon: markerIcon })
                 .addTo(markers)
                 .bindPopup(popupContent, { maxWidth: 600 })
-                // className 옵션을 통해 동적으로 CSS 클래스 부여
                 .bindTooltip(tooltipText, { direction: 'top', offset: [0, -35], className: tooltipCssClass });
         });
     }
