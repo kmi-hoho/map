@@ -21,12 +21,21 @@
         .popup-table td { border: 1px solid #c8d4e3; padding: 6px; white-space: nowrap; }
         .leaflet-popup-content { min-width: 350px !important; }
         
+        /* 팝업 테이블 내 강조 스타일 */
         .expiring-red td { background-color: #ffe6e6; color: #d93025; font-weight: bold; }
         .expiring-orange td { background-color: #fff3e0; color: #e65100; font-weight: bold; }
         .expiring-yellow td { background-color: #fffde7; color: #f57f17; font-weight: bold; }
         
-        /* 마우스 호버 시 나타나는 툴팁 스타일 */
-        .leaflet-tooltip { font-family: 'Malgun Gothic', sans-serif; font-weight: bold; font-size: 12px; padding: 6px 10px; text-align: center; line-height: 1.4; }
+        /* 툴팁 기본 및 색상별 스타일 */
+        .leaflet-tooltip { 
+            font-family: 'Malgun Gothic', sans-serif; font-weight: bold; font-size: 12px; 
+            padding: 6px 10px; text-align: center; line-height: 1.4; border-radius: 4px; border: 1px solid #ccc;
+        }
+        /* 마커 색상에 맞춘 툴팁 글씨색 */
+        .tooltip-red { color: #d93025; border-color: #d93025; background-color: #fffafa; }
+        .tooltip-orange { color: #e65100; border-color: #e65100; background-color: #fffaf5; }
+        .tooltip-yellow { color: #f57f17; border-color: #f57f17; background-color: #fffff0; }
+        .tooltip-blue { color: #1a73e8; border-color: #1a73e8; background-color: #f4f8ff; }
     </style>
 </head>
 <body>
@@ -220,11 +229,19 @@
                 </table>`;
 
             let markerIcon = blueIcon;
-            if (group.maxUrgency === 1) markerIcon = redIcon;
-            else if (group.maxUrgency === 2) markerIcon = orangeIcon;
-            else if (group.maxUrgency === 3) markerIcon = yellowIcon;
+            let tooltipCssClass = 'tooltip-blue'; // 툴팁 기본 CSS 클래스
 
-            // 툴팁 텍스트 구성: 기관명 / 지점명 <br> (날짜)
+            if (group.maxUrgency === 1) {
+                markerIcon = redIcon;
+                tooltipCssClass = 'tooltip-red';
+            } else if (group.maxUrgency === 2) {
+                markerIcon = orangeIcon;
+                tooltipCssClass = 'tooltip-orange';
+            } else if (group.maxUrgency === 3) {
+                markerIcon = yellowIcon;
+                tooltipCssClass = 'tooltip-yellow';
+            }
+
             const tooltipText = group.earliestDate !== '9999-99-99' 
                 ? `${group.orgName} / ${group.branchName}<br>(${group.earliestDate})` 
                 : `${group.orgName} / ${group.branchName}`;
@@ -232,7 +249,8 @@
             L.marker([group.lat, group.lng], { icon: markerIcon })
                 .addTo(markers)
                 .bindPopup(popupContent, { maxWidth: 600 })
-                .bindTooltip(tooltipText, { direction: 'top', offset: [0, -35] });
+                // className 옵션을 통해 동적으로 CSS 클래스 부여
+                .bindTooltip(tooltipText, { direction: 'top', offset: [0, -35], className: tooltipCssClass });
         });
     }
 
