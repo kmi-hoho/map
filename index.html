@@ -21,7 +21,6 @@
             font-size: 14px;
         }
         
-        /* 우측 상단 기준일 표시 텍스트 스타일 */
         #dataRefDate {
             position: absolute;
             right: 20px;
@@ -82,7 +81,6 @@
         <button id="searchBtn">검색</button>
         <button id="resetBtn">초기화</button>
     </div>
-    <!-- 우측 상단 데이터 기준일 표시 영역 -->
     <div id="dataRefDate"></div>
 </div>
 
@@ -123,8 +121,16 @@
             return response.arrayBuffer();
         })
         .then(buffer => {
-            const decoder = new TextDecoder('euc-kr');
-            const csvText = decoder.decode(buffer);
+            let csvText = "";
+            
+            // 인코딩 자동 감지 로직 (UTF-8 우선 시도 후 실패 시 EUC-KR 적용)
+            try {
+                const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+                csvText = utf8Decoder.decode(buffer);
+            } catch (e) {
+                const euckrDecoder = new TextDecoder('euc-kr');
+                csvText = euckrDecoder.decode(buffer);
+            }
             
             Papa.parse(csvText, {
                 header: true,
@@ -132,7 +138,7 @@
                 complete: function(results) {
                     const data = results.data;
                     allDevices = [];
-                    let maxInspectionDate = ""; // 가장 늦은 검정일 저장 변수
+                    let maxInspectionDate = ""; 
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
 
@@ -147,7 +153,6 @@
                             const testDateStr = getVal('검정일') || (rowValues.length > 0 ? rowValues[rowValues.length - 1].trim() : ''); 
                             let finalDateStr = "";
 
-                            // 최대 검정일 갱신
                             if (testDateStr && testDateStr.length >= 8) {
                                 if (testDateStr > maxInspectionDate) {
                                     maxInspectionDate = testDateStr;
@@ -191,9 +196,8 @@
                         }
                     });
 
-                    // 추출한 기준일을 화면에 반영
                     if (maxInspectionDate) {
-                        document.getElementById('dataRefDate').innerText = `[자료기준: ${maxInspectionDate}]`;
+                        document.getElementById('dataRefDate').innerText = `[데이터 기준: ${maxInspectionDate} 검정완료분]`;
                     }
 
                     applyFiltersAndRender();
