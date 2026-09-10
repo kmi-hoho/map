@@ -156,7 +156,7 @@
                                 const dateObj = new Date(testDateStr);
                                 if (!isNaN(dateObj)) {
                                     dateObj.setFullYear(dateObj.getFullYear() + 5);
-                                    dateObj.setDate(dateObj.getDate() + 1);
+                                    dateObj.setDate(dateObj.getDate() - 1);
                                     finalDateStr = formatDate(dateObj);
                                 } else {
                                     finalDateStr = testDateStr;
