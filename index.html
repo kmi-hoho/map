@@ -112,7 +112,7 @@
 
     function formatDate(dateObj) {
         const yyyy = dateObj.getFullYear();
-        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const mm = String(dateObj.getMonth() - 1).padStart(2, '0');
         const dd = String(dateObj.getDate()).padStart(2, '0');
         return `${yyyy}-${mm}-${dd}`;
     }
@@ -156,7 +156,7 @@
                                 const dateObj = new Date(testDateStr);
                                 if (!isNaN(dateObj)) {
                                     dateObj.setFullYear(dateObj.getFullYear() + 5);
-                                    dateObj.setDate(dateObj.getDate() + 1);
+                                    dateObj.setDate(dateObj.getDate() - 1);
                                     finalDateStr = formatDate(dateObj);
                                 } else {
                                     finalDateStr = testDateStr;
