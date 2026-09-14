@@ -15,8 +15,10 @@
         #dataRefDate { position: absolute; right: 20px; font-size: 12px; color: #555; font-weight: bold; }
         .header-divider { border-left: 1px solid #ccc; height: 24px; }
         input[type="text"], input[type="date"], select { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
-        button { padding: 5px 10px; border: 1px solid #999; background-color: #fff; cursor: pointer; border-radius: 4px; }
+        button { padding: 5px 10px; border: 1px solid #999; background-color: #fff; cursor: pointer; border-radius: 4px; font-family: 'Malgun Gothic', sans-serif; }
         button:hover { background-color: #e9ecef; }
+        #downloadBtn { background-color: #1a73e8; color: white; border: 1px solid #1557b0; font-weight: bold; }
+        #downloadBtn:hover { background-color: #1557b0; }
         #map { height: calc(100vh - 55px); width: 100%; }
         
         .popup-table { border-collapse: collapse; width: 100%; font-size: 12px; text-align: center; }
@@ -38,8 +40,16 @@
         .tooltip-yellow { color: #f57f17; border-color: #f57f17; background-color: #fffff0; }
         .tooltip-blue { color: #1a73e8; border-color: #1a73e8; background-color: #f4f8ff; }
 
-        /* 다중 선택 드롭다운 스타일 */
-        #regionSelect { height: 70px; vertical-align: middle; overflow-y: auto; }
+        /* 커스텀 체크박스 드롭다운 스타일 */
+        #regionSelectContainer { display: none; position: relative; }
+        #regionSelectBtn { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; min-width: 120px; user-select: none; }
+        #regionCheckboxes { 
+            display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ccc; 
+            border-radius: 4px; max-height: 300px; overflow-y: auto; z-index: 1001; width: 160px; padding: 5px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 2px;
+        }
+        #regionCheckboxes label { display: block; padding: 4px 5px; cursor: pointer; }
+        #regionCheckboxes label:hover { background-color: #f0f0f0; }
     </style>
 </head>
 <body>
@@ -58,26 +68,29 @@
         
         <input type="text" id="searchInput" placeholder="검색어 입력" />
         
-        <!-- multiple 속성 추가 및 안내 문구 툴팁 제공 -->
-        <select id="regionSelect" multiple title="Ctrl 또는 Cmd 키를 누르고 클릭하면 여러 지역을 선택할 수 있습니다." style="display: none;">
-            <option value="서울">서울특별시</option>
-            <option value="부산">부산광역시</option>
-            <option value="대구">대구광역시</option>
-            <option value="인천">인천광역시</option>
-            <option value="광주">광주광역시</option>
-            <option value="대전">대전광역시</option>
-            <option value="울산">울산광역시</option>
-            <option value="세종">세종특별자치시</option>
-            <option value="경기">경기도</option>
-            <option value="강원">강원특별자치도</option>
-            <option value="충북">충청북도</option>
-            <option value="충남">충청남도</option>
-            <option value="전북">전북특별자치도</option>
-            <option value="전남">전라남도</option>
-            <option value="경북">경상북도</option>
-            <option value="경남">경상남도</option>
-            <option value="제주">제주특별자치도</option>
-        </select>
+        <!-- 커스텀 다중 선택 체크박스 레이어 -->
+        <div id="regionSelectContainer">
+            <div id="regionSelectBtn">시도 선택 ▼</div>
+            <div id="regionCheckboxes">
+                <label><input type="checkbox" value="서울" data-text="서울특별시" class="region-chk"> 서울특별시</label>
+                <label><input type="checkbox" value="부산" data-text="부산광역시" class="region-chk"> 부산광역시</label>
+                <label><input type="checkbox" value="대구" data-text="대구광역시" class="region-chk"> 대구광역시</label>
+                <label><input type="checkbox" value="인천" data-text="인천광역시" class="region-chk"> 인천광역시</label>
+                <label><input type="checkbox" value="광주" data-text="광주광역시" class="region-chk"> 광주광역시</label>
+                <label><input type="checkbox" value="대전" data-text="대전광역시" class="region-chk"> 대전광역시</label>
+                <label><input type="checkbox" value="울산" data-text="울산광역시" class="region-chk"> 울산광역시</label>
+                <label><input type="checkbox" value="세종" data-text="세종특별자치시" class="region-chk"> 세종특별자치시</label>
+                <label><input type="checkbox" value="경기" data-text="경기도" class="region-chk"> 경기도</label>
+                <label><input type="checkbox" value="강원" data-text="강원특별자치도" class="region-chk"> 강원특별자치도</label>
+                <label><input type="checkbox" value="충북" data-text="충청북도" class="region-chk"> 충청북도</label>
+                <label><input type="checkbox" value="충남" data-text="충청남도" class="region-chk"> 충청남도</label>
+                <label><input type="checkbox" value="전북" data-text="전북특별자치도" class="region-chk"> 전북특별자치도</label>
+                <label><input type="checkbox" value="전남" data-text="전라남도" class="region-chk"> 전라남도</label>
+                <label><input type="checkbox" value="경북" data-text="경상북도" class="region-chk"> 경상북도</label>
+                <label><input type="checkbox" value="경남" data-text="경상남도" class="region-chk"> 경상남도</label>
+                <label><input type="checkbox" value="제주" data-text="제주특별자치도" class="region-chk"> 제주특별자치도</label>
+            </div>
+        </div>
     </div>
     <div class="header-divider"></div>
     <div>
@@ -87,6 +100,7 @@
     <div>
         <button id="searchBtn">검색</button>
         <button id="resetBtn">초기화</button>
+        <button id="downloadBtn">자료 다운</button>
     </div>
     <div id="dataRefDate"></div>
 </div>
@@ -105,6 +119,7 @@
 
     let markers = L.layerGroup().addTo(map);
     let allDevices = [];
+    let currentFilteredRows = []; // 다운로드를 위해 현재 필터링된 원본 데이터를 저장하는 배열
 
     const getIconUrl = (color) => `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`;
     const iconOptions = { shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] };
@@ -122,14 +137,44 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
+    // 드롭다운 및 체크박스 제어 로직
     document.getElementById('searchCategory').addEventListener('change', function(e) {
         if (e.target.value === 'region') {
             document.getElementById('searchInput').style.display = 'none';
-            document.getElementById('regionSelect').style.display = 'inline-block';
+            document.getElementById('regionSelectContainer').style.display = 'inline-block';
         } else {
             document.getElementById('searchInput').style.display = 'inline-block';
-            document.getElementById('regionSelect').style.display = 'none';
+            document.getElementById('regionSelectContainer').style.display = 'none';
         }
+    });
+
+    // 버튼 클릭 시 지역 목록 열기/닫기
+    document.getElementById('regionSelectBtn').addEventListener('click', function(e) {
+        const list = document.getElementById('regionCheckboxes');
+        list.style.display = list.style.display === 'none' || list.style.display === '' ? 'block' : 'none';
+        e.stopPropagation();
+    });
+
+    // 외부 클릭 시 지역 목록 닫기
+    document.addEventListener('click', function(e) {
+        const container = document.getElementById('regionSelectContainer');
+        const list = document.getElementById('regionCheckboxes');
+        if (!container.contains(e.target)) {
+            list.style.display = 'none';
+        }
+    });
+
+    // 체크박스 클릭 시 버튼 텍스트 변경
+    document.querySelectorAll('.region-chk').forEach(chk => {
+        chk.addEventListener('change', function() {
+            const checkedCount = document.querySelectorAll('.region-chk:checked').length;
+            const btn = document.getElementById('regionSelectBtn');
+            if (checkedCount === 0) {
+                btn.innerText = '시도 선택 ▼';
+            } else {
+                btn.innerText = `${checkedCount}개 지역 선택됨 ▼`;
+            }
+        });
     });
 
     fetch('검정대상.csv')
@@ -213,7 +258,8 @@
                                 lat: lat, lng: lng, address: address, 
                                 orgName: getVal('기관명'), branchName: getVal('지점명'),
                                 modelName: getVal('모델명'), serialNum: getVal('제조번호'), latestDate: finalDateStr, 
-                                urgencyLevel: urgencyLevel, diffDays: diffDaysForDday
+                                urgencyLevel: urgencyLevel, diffDays: diffDaysForDday,
+                                originalRow: row // 다운로드 기능을 위해 원본 데이터 유지
                             });
                         }
                     });
@@ -230,11 +276,14 @@
 
     function applyFiltersAndRender() {
         markers.clearLayers();
+        currentFilteredRows = []; // 초기화
         const category = document.getElementById('searchCategory').value;
         const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
         
-        // 다중 선택된 지역 배열 가져오기
-        const selectedRegions = Array.from(document.getElementById('regionSelect').selectedOptions).map(opt => opt.value);
+        // 체크된 지역 목록 가져오기 (배열 형태의 객체 반환)
+        const checkedRegions = Array.from(document.querySelectorAll('.region-chk:checked')).map(chk => {
+            return { shortName: chk.value, fullName: chk.getAttribute('data-text') };
+        });
         
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
@@ -244,11 +293,10 @@
             let textMatch = true;
             
             if (category === 'region') {
-                if (selectedRegions.length > 0) {
+                if (checkedRegions.length > 0) {
                     let matchAny = false;
-                    for (const regionVal of selectedRegions) {
-                        const regionText = document.querySelector(`#regionSelect option[value="${regionVal}"]`).text;
-                        if (dev.address && (dev.address.includes(regionVal) || dev.address.includes(regionText))) {
+                    for (const region of checkedRegions) {
+                        if (dev.address && (dev.address.includes(region.shortName) || dev.address.includes(region.fullName))) {
                             matchAny = true;
                             break;
                         }
@@ -269,6 +317,8 @@
             }
 
             if (textMatch && dateMatch) {
+                currentFilteredRows.push(dev.originalRow); // 필터 통과한 원본 데이터 저장
+
                 const locationKey = `${dev.lat}_${dev.lng}`;
                 if (!groupedData[locationKey]) {
                     groupedData[locationKey] = { 
@@ -364,16 +414,36 @@
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
         
-        // 다중 선택 드롭다운 초기화
-        const regionSelect = document.getElementById('regionSelect');
-        for (let i = 0; i < regionSelect.options.length; i++) {
-            regionSelect.options[i].selected = false;
-        }
+        // 체크박스 및 버튼 텍스트 초기화
+        document.querySelectorAll('.region-chk').forEach(chk => chk.checked = false);
+        document.getElementById('regionSelectBtn').innerText = '시도 선택 ▼';
         
         document.getElementById('searchInput').style.display = 'inline-block';
-        document.getElementById('regionSelect').style.display = 'none';
+        document.getElementById('regionSelectContainer').style.display = 'none';
         
         applyFiltersAndRender();
+    });
+
+    // 다운로드 버튼 클릭 이벤트 (엑셀에서 열 수 있도록 UTF-8 BOM 추가)
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        if (currentFilteredRows.length === 0) {
+            alert("다운로드할 데이터가 없습니다.");
+            return;
+        }
+        
+        // PapaParse를 이용해 필터링된 JSON 데이터를 다시 CSV 문자열로 변환
+        const csvString = Papa.unparse(currentFilteredRows);
+        
+        // 한글 깨짐 방지를 위한 BOM(\uFEFF) 추가
+        const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", "지진관측장비_검색결과.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 </script>
 </body>
