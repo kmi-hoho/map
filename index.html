@@ -37,6 +37,9 @@
         .tooltip-orange { color: #e65100; border-color: #e65100; background-color: #fffaf5; }
         .tooltip-yellow { color: #f57f17; border-color: #f57f17; background-color: #fffff0; }
         .tooltip-blue { color: #1a73e8; border-color: #1a73e8; background-color: #f4f8ff; }
+
+        /* 다중 선택 드롭다운 스타일 */
+        #regionSelect { height: 70px; vertical-align: middle; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -55,8 +58,8 @@
         
         <input type="text" id="searchInput" placeholder="검색어 입력" />
         
-        <select id="regionSelect" style="display: none;">
-            <option value="">시도 선택</option>
+        <!-- multiple 속성 추가 및 안내 문구 툴팁 제공 -->
+        <select id="regionSelect" multiple title="Ctrl 또는 Cmd 키를 누르고 클릭하면 여러 지역을 선택할 수 있습니다." style="display: none;">
             <option value="서울">서울특별시</option>
             <option value="부산">부산광역시</option>
             <option value="대구">대구광역시</option>
@@ -158,7 +161,6 @@
                         const rowValues = Object.values(row);
                         const getVal = (key) => row[key] ? row[key].trim() : '';
                         
-                        // 위도 경도 파싱
                         let lat = parseFloat(getVal('위도'));
                         let lng = parseFloat(getVal('경도'));
                         
@@ -168,9 +170,7 @@
                         }
 
                         if (!isNaN(lat) && !isNaN(lng)) {
-                            // '주소' 칼럼 데이터 가져오기
                             const address = getVal('주소') || (rowValues.length > 5 ? rowValues[5] : '');
-
                             const validPeriodDate = getVal('검정유효기간');
                             const testDateStr = getVal('검정일') || (rowValues.length > 0 ? rowValues[rowValues.length - 1].trim() : ''); 
                             let finalDateStr = "";
@@ -210,7 +210,7 @@
                             }
 
                             allDevices.push({
-                                lat: lat, lng: lng, address: address, // 주소 데이터 추가 저장
+                                lat: lat, lng: lng, address: address, 
                                 orgName: getVal('기관명'), branchName: getVal('지점명'),
                                 modelName: getVal('모델명'), serialNum: getVal('제조번호'), latestDate: finalDateStr, 
                                 urgencyLevel: urgencyLevel, diffDays: diffDaysForDday
@@ -232,7 +232,10 @@
         markers.clearLayers();
         const category = document.getElementById('searchCategory').value;
         const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-        const regionVal = document.getElementById('regionSelect').value;
+        
+        // 다중 선택된 지역 배열 가져오기
+        const selectedRegions = Array.from(document.getElementById('regionSelect').selectedOptions).map(opt => opt.value);
+        
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const groupedData = {};
@@ -240,14 +243,17 @@
         allDevices.forEach(dev => {
             let textMatch = true;
             
-            // 카테고리가 '지역별'인 경우 CSV의 '주소' 필드에서 텍스트 포함 여부 검사
             if (category === 'region') {
-                if (regionVal) {
-                    // 예: 주소가 "경상북도 경산시..." 일때 regionVal("경북")이 포함되는지 체크
-                    // "충북", "충청북도" 등 표기가 다를 수 있으므로 앞 2글자가 포함되는지로 유연하게 체크
-                    if (!dev.address || !dev.address.includes(regionVal) && !dev.address.includes(document.querySelector(`#regionSelect option[value="${regionVal}"]`).text)) {
-                        textMatch = false;
+                if (selectedRegions.length > 0) {
+                    let matchAny = false;
+                    for (const regionVal of selectedRegions) {
+                        const regionText = document.querySelector(`#regionSelect option[value="${regionVal}"]`).text;
+                        if (dev.address && (dev.address.includes(regionVal) || dev.address.includes(regionText))) {
+                            matchAny = true;
+                            break;
+                        }
                     }
+                    if (!matchAny) textMatch = false;
                 }
             } else if (keyword) {
                 const targetValue = (dev[category] || '').toLowerCase();
@@ -351,12 +357,18 @@
     document.getElementById('searchInput').addEventListener('keyup', function(e) {
         if (e.key === 'Enter') applyFiltersAndRender();
     });
+    
     document.getElementById('resetBtn').addEventListener('click', function() {
         document.getElementById('searchCategory').value = 'orgName';
         document.getElementById('searchInput').value = '';
-        document.getElementById('regionSelect').value = '';
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
+        
+        // 다중 선택 드롭다운 초기화
+        const regionSelect = document.getElementById('regionSelect');
+        for (let i = 0; i < regionSelect.options.length; i++) {
+            regionSelect.options[i].selected = false;
+        }
         
         document.getElementById('searchInput').style.display = 'inline-block';
         document.getElementById('regionSelect').style.display = 'none';
