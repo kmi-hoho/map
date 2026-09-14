@@ -8,27 +8,11 @@
         body { margin: 0; padding: 0; font-family: 'Malgun Gothic', sans-serif; }
         
         #header { 
-            padding: 10px 15px; 
-            background-color: #f8f9fa; 
-            border-bottom: 1px solid #ddd; 
-            z-index: 1000; 
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 15px; 
-            flex-wrap: wrap; 
-            font-size: 14px;
+            padding: 10px 15px; background-color: #f8f9fa; border-bottom: 1px solid #ddd; 
+            z-index: 1000; position: relative; display: flex; align-items: center; justify-content: center; gap: 15px; flex-wrap: wrap; font-size: 14px;
         }
         
-        #dataRefDate {
-            position: absolute;
-            right: 20px;
-            font-size: 12px;
-            color: #555;
-            font-weight: bold;
-        }
-        
+        #dataRefDate { position: absolute; right: 20px; font-size: 12px; color: #555; font-weight: bold; }
         .header-divider { border-left: 1px solid #ccc; height: 24px; }
         input[type="text"], input[type="date"], select { padding: 4px; border: 1px solid #ccc; border-radius: 4px; }
         button { padding: 5px 10px; border: 1px solid #999; background-color: #fff; cursor: pointer; border-radius: 4px; }
@@ -47,10 +31,7 @@
         
         .d-day-text { font-size: 11px; margin-left: 4px; }
         
-        .leaflet-tooltip { 
-            font-family: 'Malgun Gothic', sans-serif; font-weight: bold; font-size: 12px; 
-            padding: 6px 10px; text-align: center; line-height: 1.4; border-radius: 4px; border: 1px solid #ccc;
-        }
+        .leaflet-tooltip { font-family: 'Malgun Gothic', sans-serif; font-weight: bold; font-size: 12px; padding: 6px 10px; text-align: center; line-height: 1.4; border-radius: 4px; border: 1px solid #ccc; }
         .tooltip-black { color: #ffffff; border-color: #333333; background-color: #333333; }
         .tooltip-red { color: #d93025; border-color: #d93025; background-color: #fffafa; }
         .tooltip-orange { color: #e65100; border-color: #e65100; background-color: #fffaf5; }
@@ -63,14 +44,39 @@
 <div id="header">
     <div><b>지진관측장비 검정 지도</b></div>
     <div class="header-divider"></div>
-    <div>
+    <div style="display: flex; align-items: center; gap: 5px;">
         <select id="searchCategory">
             <option value="orgName">기관명</option>
             <option value="branchName">지점명</option>
             <option value="modelName">모델명</option>
             <option value="serialNum">제조번호</option>
+            <option value="region">지역별(시도)</option>
         </select>
+        
+        <!-- 일반 텍스트 검색 입력창 -->
         <input type="text" id="searchInput" placeholder="검색어 입력" />
+        
+        <!-- 지역 선택 전용 드롭다운 (초기엔 숨김) -->
+        <select id="regionSelect" style="display: none;">
+            <option value="">시도 선택</option>
+            <option value="Seoul">서울특별시</option>
+            <option value="JeonnamGwangju">전남광주통합특별시</option>
+            <option value="Busan">부산광역시</option>
+            <option value="Daegu">대구광역시</option>
+            <option value="Incheon">인천광역시</option>
+            <option value="Daejeon">대전광역시</option>
+            <option value="Ulsan">울산광역시</option>
+            <option value="Sejong">세종특별자치시</option>
+            <option value="Gyeonggi">경기도</option>
+            <option value="Chungbuk">충청북도</option>
+            <option value="Chungnam">충청남도</option>
+            <option value="Gyeongbuk">경상북도</option>
+            <option value="Gyeongnam">경상남도</option>
+            <option value="Jeju">제주특별자치도</option>
+            <option value="Gangwon">강원특별자치도</option>
+            <option value="Jeonbuk">전북특별자치도</option>
+            <option value="Overseas">해외</option>
+        </select>
     </div>
     <div class="header-divider"></div>
     <div>
@@ -115,6 +121,49 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
+    // 위경도 기반 지역 판별 함수
+    function isPointInRegion(lat, lng, regionCode) {
+        const isSeoul = lat >= 37.42 && lat <= 37.72 && lng >= 126.76 && lng <= 127.19;
+        const isIncheon = lat >= 37.00 && lat <= 37.98 && lng >= 126.00 && lng <= 126.80;
+        const isDaejeon = lat >= 36.25 && lat <= 36.50 && lng >= 127.24 && lng <= 127.51;
+        const isSejong = lat >= 36.43 && lat <= 36.71 && lng >= 127.16 && lng <= 127.35;
+        const isBusan = lat >= 34.87 && lat <= 35.40 && lng >= 128.73 && lng <= 129.33;
+        const isUlsan = lat >= 35.38 && lat <= 35.73 && lng >= 128.98 && lng <= 129.48;
+        const isDaegu = lat >= 35.59 && lat <= 36.02 && lng >= 128.35 && lng <= 128.88;
+
+        switch(regionCode) {
+            case 'Seoul': return isSeoul;
+            case 'Busan': return isBusan;
+            case 'Daegu': return isDaegu;
+            case 'Incheon': return isIncheon;
+            case 'Daejeon': return isDaejeon;
+            case 'Ulsan': return isUlsan;
+            case 'Sejong': return isSejong;
+            case 'JeonnamGwangju': return lat >= 33.95 && lat <= 35.50 && lng >= 125.04 && lng <= 127.93;
+            case 'Gyeonggi': return (lat >= 36.89 && lat <= 38.30 && lng >= 126.58 && lng <= 127.85) && !isSeoul && !isIncheon;
+            case 'Gangwon': return lat >= 37.04 && lat <= 38.65 && lng >= 127.12 && lng <= 129.36;
+            case 'Chungbuk': return lat >= 36.01 && lat <= 37.26 && lng >= 127.29 && lng <= 128.65;
+            case 'Chungnam': return (lat >= 35.97 && lat <= 37.06 && lng >= 125.99 && lng <= 127.64) && !isDaejeon && !isSejong;
+            case 'Jeonbuk': return lat >= 35.37 && lat <= 36.17 && lng >= 125.96 && lng <= 127.93;
+            case 'Gyeongbuk': return (lat >= 35.54 && lat <= 37.25 && lng >= 127.79 && lng <= 129.59) && !isDaegu;
+            case 'Gyeongnam': return (lat >= 34.52 && lat <= 35.91 && lng >= 127.58 && lng <= 129.22) && !isBusan && !isUlsan;
+            case 'Jeju': return lat >= 33.10 && lat <= 34.00 && lng >= 126.10 && lng <= 127.00;
+            case 'Overseas': return lat < 33 || lat > 39 || lng < 124 || lng > 132;
+            default: return true;
+        }
+    }
+
+    // 검색 분류 변경 시 UI 토글 이벤트
+    document.getElementById('searchCategory').addEventListener('change', function(e) {
+        if (e.target.value === 'region') {
+            document.getElementById('searchInput').style.display = 'none';
+            document.getElementById('regionSelect').style.display = 'inline-block';
+        } else {
+            document.getElementById('searchInput').style.display = 'inline-block';
+            document.getElementById('regionSelect').style.display = 'none';
+        }
+    });
+
     fetch('검정대상.csv')
         .then(response => {
             if (!response.ok) throw new Error("네트워크 응답이 정상이 아닙니다.");
@@ -122,8 +171,6 @@
         })
         .then(buffer => {
             let csvText = "";
-            
-            // 인코딩 자동 감지 로직 (UTF-8 우선 시도 후 실패 시 EUC-KR 적용)
             try {
                 const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
                 csvText = utf8Decoder.decode(buffer);
@@ -197,7 +244,7 @@
                     });
 
                     if (maxInspectionDate) {
-                        document.getElementById('dataRefDate').innerText = `[기준: ${maxInspectionDate} 검정완료분]`;
+                        document.getElementById('dataRefDate').innerText = `[데이터 기준: ${maxInspectionDate} 검정완료분]`;
                     }
 
                     applyFiltersAndRender();
@@ -210,13 +257,20 @@
         markers.clearLayers();
         const category = document.getElementById('searchCategory').value;
         const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        const regionVal = document.getElementById('regionSelect').value;
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         const groupedData = {};
 
         allDevices.forEach(dev => {
             let textMatch = true;
-            if (keyword) {
+            
+            // 카테고리가 '지역별'인 경우 위경도 기반 체크
+            if (category === 'region') {
+                if (regionVal && !isPointInRegion(dev.lat, dev.lng, regionVal)) {
+                    textMatch = false;
+                }
+            } else if (keyword) {
                 const targetValue = (dev[category] || '').toLowerCase();
                 if (!targetValue.includes(keyword)) textMatch = false;
             }
@@ -319,10 +373,15 @@
         if (e.key === 'Enter') applyFiltersAndRender();
     });
     document.getElementById('resetBtn').addEventListener('click', function() {
+        document.getElementById('searchCategory').value = 'orgName';
         document.getElementById('searchInput').value = '';
+        document.getElementById('regionSelect').value = '';
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
-        document.getElementById('searchCategory').value = 'orgName';
+        
+        document.getElementById('searchInput').style.display = 'inline-block';
+        document.getElementById('regionSelect').style.display = 'none';
+        
         applyFiltersAndRender();
     });
 </script>
