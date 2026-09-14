@@ -53,29 +53,27 @@
             <option value="region">지역별(시도)</option>
         </select>
         
-        <!-- 일반 텍스트 검색 입력창 -->
         <input type="text" id="searchInput" placeholder="검색어 입력" />
         
-        <!-- 지역 선택 전용 드롭다운 (초기엔 숨김) -->
         <select id="regionSelect" style="display: none;">
             <option value="">시도 선택</option>
-            <option value="Seoul">서울특별시</option>
-            <option value="JeonnamGwangju">전남광주통합특별시</option>
-            <option value="Busan">부산광역시</option>
-            <option value="Daegu">대구광역시</option>
-            <option value="Incheon">인천광역시</option>
-            <option value="Daejeon">대전광역시</option>
-            <option value="Ulsan">울산광역시</option>
-            <option value="Sejong">세종특별자치시</option>
-            <option value="Gyeonggi">경기도</option>
-            <option value="Chungbuk">충청북도</option>
-            <option value="Chungnam">충청남도</option>
-            <option value="Gyeongbuk">경상북도</option>
-            <option value="Gyeongnam">경상남도</option>
-            <option value="Jeju">제주특별자치도</option>
-            <option value="Gangwon">강원특별자치도</option>
-            <option value="Jeonbuk">전북특별자치도</option>
-            <option value="Overseas">해외</option>
+            <option value="서울">서울특별시</option>
+            <option value="부산">부산광역시</option>
+            <option value="대구">대구광역시</option>
+            <option value="인천">인천광역시</option>
+            <option value="광주">광주광역시</option>
+            <option value="대전">대전광역시</option>
+            <option value="울산">울산광역시</option>
+            <option value="세종">세종특별자치시</option>
+            <option value="경기">경기도</option>
+            <option value="강원">강원특별자치도</option>
+            <option value="충북">충청북도</option>
+            <option value="충남">충청남도</option>
+            <option value="전북">전북특별자치도</option>
+            <option value="전남">전라남도</option>
+            <option value="경북">경상북도</option>
+            <option value="경남">경상남도</option>
+            <option value="제주">제주특별자치도</option>
         </select>
     </div>
     <div class="header-divider"></div>
@@ -121,39 +119,6 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
-    // 위경도 기반 지역 판별 함수
-    function isPointInRegion(lat, lng, regionCode) {
-        const isSeoul = lat >= 37.42 && lat <= 37.72 && lng >= 126.76 && lng <= 127.19;
-        const isIncheon = lat >= 37.00 && lat <= 37.98 && lng >= 126.00 && lng <= 126.80;
-        const isDaejeon = lat >= 36.25 && lat <= 36.50 && lng >= 127.24 && lng <= 127.51;
-        const isSejong = lat >= 36.43 && lat <= 36.71 && lng >= 127.16 && lng <= 127.35;
-        const isBusan = lat >= 34.87 && lat <= 35.40 && lng >= 128.73 && lng <= 129.33;
-        const isUlsan = lat >= 35.38 && lat <= 35.73 && lng >= 128.98 && lng <= 129.48;
-        const isDaegu = lat >= 35.59 && lat <= 36.02 && lng >= 128.35 && lng <= 128.88;
-
-        switch(regionCode) {
-            case 'Seoul': return isSeoul;
-            case 'Busan': return isBusan;
-            case 'Daegu': return isDaegu;
-            case 'Incheon': return isIncheon;
-            case 'Daejeon': return isDaejeon;
-            case 'Ulsan': return isUlsan;
-            case 'Sejong': return isSejong;
-            case 'JeonnamGwangju': return lat >= 33.95 && lat <= 35.50 && lng >= 125.04 && lng <= 127.93;
-            case 'Gyeonggi': return (lat >= 36.89 && lat <= 38.30 && lng >= 126.58 && lng <= 127.85) && !isSeoul && !isIncheon;
-            case 'Gangwon': return lat >= 37.04 && lat <= 38.65 && lng >= 127.12 && lng <= 129.36;
-            case 'Chungbuk': return lat >= 36.01 && lat <= 37.26 && lng >= 127.29 && lng <= 128.65;
-            case 'Chungnam': return (lat >= 35.97 && lat <= 37.06 && lng >= 125.99 && lng <= 127.64) && !isDaejeon && !isSejong;
-            case 'Jeonbuk': return lat >= 35.37 && lat <= 36.17 && lng >= 125.96 && lng <= 127.93;
-            case 'Gyeongbuk': return (lat >= 35.54 && lat <= 37.25 && lng >= 127.79 && lng <= 129.59) && !isDaegu;
-            case 'Gyeongnam': return (lat >= 34.52 && lat <= 35.91 && lng >= 127.58 && lng <= 129.22) && !isBusan && !isUlsan;
-            case 'Jeju': return lat >= 33.10 && lat <= 34.00 && lng >= 126.10 && lng <= 127.00;
-            case 'Overseas': return lat < 33 || lat > 39 || lng < 124 || lng > 132;
-            default: return true;
-        }
-    }
-
-    // 검색 분류 변경 시 UI 토글 이벤트
     document.getElementById('searchCategory').addEventListener('change', function(e) {
         if (e.target.value === 'region') {
             document.getElementById('searchInput').style.display = 'none';
@@ -192,10 +157,20 @@
                     data.forEach(row => {
                         const rowValues = Object.values(row);
                         const getVal = (key) => row[key] ? row[key].trim() : '';
-                        const lat = parseFloat(getVal('위도') || rowValues[3]); 
-                        const lng = parseFloat(getVal('경도') || rowValues[4]); 
+                        
+                        // 위도 경도 파싱
+                        let lat = parseFloat(getVal('위도'));
+                        let lng = parseFloat(getVal('경도'));
+                        
+                        if (isNaN(lat) || isNaN(lng)) {
+                            lat = parseFloat(rowValues[3]);
+                            lng = parseFloat(rowValues[4]);
+                        }
 
                         if (!isNaN(lat) && !isNaN(lng)) {
+                            // '주소' 칼럼 데이터 가져오기
+                            const address = getVal('주소') || (rowValues.length > 5 ? rowValues[5] : '');
+
                             const validPeriodDate = getVal('검정유효기간');
                             const testDateStr = getVal('검정일') || (rowValues.length > 0 ? rowValues[rowValues.length - 1].trim() : ''); 
                             let finalDateStr = "";
@@ -235,10 +210,10 @@
                             }
 
                             allDevices.push({
-                                lat: lat, lng: lng, orgName: getVal('기관명'), branchName: getVal('지점명'),
+                                lat: lat, lng: lng, address: address, // 주소 데이터 추가 저장
+                                orgName: getVal('기관명'), branchName: getVal('지점명'),
                                 modelName: getVal('모델명'), serialNum: getVal('제조번호'), latestDate: finalDateStr, 
-                                urgencyLevel: urgencyLevel,
-                                diffDays: diffDaysForDday
+                                urgencyLevel: urgencyLevel, diffDays: diffDaysForDday
                             });
                         }
                     });
@@ -265,10 +240,14 @@
         allDevices.forEach(dev => {
             let textMatch = true;
             
-            // 카테고리가 '지역별'인 경우 위경도 기반 체크
+            // 카테고리가 '지역별'인 경우 CSV의 '주소' 필드에서 텍스트 포함 여부 검사
             if (category === 'region') {
-                if (regionVal && !isPointInRegion(dev.lat, dev.lng, regionVal)) {
-                    textMatch = false;
+                if (regionVal) {
+                    // 예: 주소가 "경상북도 경산시..." 일때 regionVal("경북")이 포함되는지 체크
+                    // "충북", "충청북도" 등 표기가 다를 수 있으므로 앞 2글자가 포함되는지로 유연하게 체크
+                    if (!dev.address || !dev.address.includes(regionVal) && !dev.address.includes(document.querySelector(`#regionSelect option[value="${regionVal}"]`).text)) {
+                        textMatch = false;
+                    }
                 }
             } else if (keyword) {
                 const targetValue = (dev[category] || '').toLowerCase();
