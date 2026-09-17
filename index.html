@@ -40,16 +40,16 @@
         .tooltip-yellow { color: #f57f17; border-color: #f57f17; background-color: #fffff0; }
         .tooltip-blue { color: #1a73e8; border-color: #1a73e8; background-color: #f4f8ff; }
 
-        /* 커스텀 체크박스 드롭다운 스타일 */
-        #regionSelectContainer { display: none; position: relative; }
-        #regionSelectBtn { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; min-width: 120px; user-select: none; }
-        #regionCheckboxes { 
+        /* 다중 선택 드롭다운 공통 스타일 (기관명, 지역별 모두 적용) */
+        .dropdown-container { display: none; position: relative; }
+        .dropdown-btn { padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer; min-width: 120px; user-select: none; }
+        .dropdown-list { 
             display: none; position: absolute; top: 100%; left: 0; background: #fff; border: 1px solid #ccc; 
-            border-radius: 4px; max-height: 300px; overflow-y: auto; z-index: 1001; width: 160px; padding: 5px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 2px;
+            border-radius: 4px; max-height: 300px; overflow-y: auto; z-index: 1001; min-width: 160px; padding: 5px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 2px; white-space: nowrap;
         }
-        #regionCheckboxes label { display: block; padding: 4px 5px; cursor: pointer; }
-        #regionCheckboxes label:hover { background-color: #f0f0f0; }
+        .dropdown-list label { display: block; padding: 4px 5px; cursor: pointer; }
+        .dropdown-list label:hover { background-color: #f0f0f0; }
     </style>
 </head>
 <body>
@@ -66,12 +66,21 @@
             <option value="region">지역별(시도)</option>
         </select>
         
-        <input type="text" id="searchInput" placeholder="검색어 입력" />
+        <!-- 검색어 입력 (지점명, 모델명, 제조번호 선택 시 표시) -->
+        <input type="text" id="searchInput" placeholder="검색어 입력" style="display: none;" />
         
-        <!-- 커스텀 다중 선택 체크박스 레이어 -->
-        <div id="regionSelectContainer">
-            <div id="regionSelectBtn">시도 선택 ▼</div>
-            <div id="regionCheckboxes">
+        <!-- 기관명 다중 선택 체크박스 레이어 (기본값) -->
+        <div id="orgSelectContainer" class="dropdown-container">
+            <div id="orgSelectBtn" class="dropdown-btn">기관명 선택 ▼</div>
+            <div id="orgCheckboxes" class="dropdown-list">
+                <!-- 동적으로 기관명이 채워집니다. -->
+            </div>
+        </div>
+
+        <!-- 지역별 다중 선택 체크박스 레이어 -->
+        <div id="regionSelectContainer" class="dropdown-container">
+            <div id="regionSelectBtn" class="dropdown-btn">시도 선택 ▼</div>
+            <div id="regionCheckboxes" class="dropdown-list">
                 <label><input type="checkbox" value="서울" data-text="서울특별시" class="region-chk"> 서울특별시</label>
                 <label><input type="checkbox" value="부산" data-text="부산광역시" class="region-chk"> 부산광역시</label>
                 <label><input type="checkbox" value="대구" data-text="대구광역시" class="region-chk"> 대구광역시</label>
@@ -119,7 +128,7 @@
 
     let markers = L.layerGroup().addTo(map);
     let allDevices = [];
-    let currentFilteredRows = []; // 다운로드를 위해 현재 필터링된 원본 데이터를 저장하는 배열
+    let currentFilteredRows = [];
 
     const getIconUrl = (color) => `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${color}.png`;
     const iconOptions = { shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png', iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41] };
@@ -137,34 +146,47 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
-    // 드롭다운 및 체크박스 제어 로직
+    // 카테고리 변경 시 UI 전환
     document.getElementById('searchCategory').addEventListener('change', function(e) {
-        if (e.target.value === 'region') {
-            document.getElementById('searchInput').style.display = 'none';
+        const val = e.target.value;
+        document.getElementById('searchInput').style.display = 'none';
+        document.getElementById('regionSelectContainer').style.display = 'none';
+        document.getElementById('orgSelectContainer').style.display = 'none';
+
+        if (val === 'region') {
             document.getElementById('regionSelectContainer').style.display = 'inline-block';
+        } else if (val === 'orgName') {
+            document.getElementById('orgSelectContainer').style.display = 'inline-block';
         } else {
             document.getElementById('searchInput').style.display = 'inline-block';
-            document.getElementById('regionSelectContainer').style.display = 'none';
         }
     });
 
-    // 버튼 클릭 시 지역 목록 열기/닫기
-    document.getElementById('regionSelectBtn').addEventListener('click', function(e) {
-        const list = document.getElementById('regionCheckboxes');
-        list.style.display = list.style.display === 'none' || list.style.display === '' ? 'block' : 'none';
-        e.stopPropagation();
-    });
+    // 드롭다운 공통 제어 함수
+    function setupDropdown(btnId, listId, containerId) {
+        document.getElementById(btnId).addEventListener('click', function(e) {
+            const list = document.getElementById(listId);
+            // 다른 열려있는 드롭다운 닫기
+            document.querySelectorAll('.dropdown-list').forEach(el => {
+                if (el.id !== listId) el.style.display = 'none';
+            });
+            list.style.display = list.style.display === 'none' || list.style.display === '' ? 'block' : 'none';
+            e.stopPropagation();
+        });
 
-    // 외부 클릭 시 지역 목록 닫기
-    document.addEventListener('click', function(e) {
-        const container = document.getElementById('regionSelectContainer');
-        const list = document.getElementById('regionCheckboxes');
-        if (!container.contains(e.target)) {
-            list.style.display = 'none';
-        }
-    });
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById(containerId);
+            const list = document.getElementById(listId);
+            if (container && !container.contains(e.target)) {
+                list.style.display = 'none';
+            }
+        });
+    }
 
-    // 체크박스 클릭 시 버튼 텍스트 변경
+    setupDropdown('regionSelectBtn', 'regionCheckboxes', 'regionSelectContainer');
+    setupDropdown('orgSelectBtn', 'orgCheckboxes', 'orgSelectContainer');
+
+    // 지역 체크박스 텍스트 업데이트
     document.querySelectorAll('.region-chk').forEach(chk => {
         chk.addEventListener('change', function() {
             const checkedCount = document.querySelectorAll('.region-chk:checked').length;
@@ -198,6 +220,7 @@
                 complete: function(results) {
                     const data = results.data;
                     allDevices = [];
+                    const uniqueOrgs = new Set(); // 기관명 추출용 Set
                     let maxInspectionDate = ""; 
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
@@ -216,6 +239,9 @@
 
                         if (!isNaN(lat) && !isNaN(lng)) {
                             const address = getVal('주소') || (rowValues.length > 5 ? rowValues[5] : '');
+                            const orgName = getVal('기관명');
+                            if (orgName) uniqueOrgs.add(orgName); // 고유 기관명 추가
+
                             const validPeriodDate = getVal('검정유효기간');
                             const testDateStr = getVal('검정일') || (rowValues.length > 0 ? rowValues[rowValues.length - 1].trim() : ''); 
                             let finalDateStr = "";
@@ -256,17 +282,43 @@
 
                             allDevices.push({
                                 lat: lat, lng: lng, address: address, 
-                                orgName: getVal('기관명'), branchName: getVal('지점명'),
+                                orgName: orgName, branchName: getVal('지점명'),
                                 modelName: getVal('모델명'), serialNum: getVal('제조번호'), latestDate: finalDateStr, 
                                 urgencyLevel: urgencyLevel, diffDays: diffDaysForDday,
-                                originalRow: row // 다운로드 기능을 위해 원본 데이터 유지
+                                originalRow: row 
                             });
                         }
+                    });
+
+                    // 기관명 체크박스 동적 생성
+                    const orgList = Array.from(uniqueOrgs).sort();
+                    const orgCheckboxesDiv = document.getElementById('orgCheckboxes');
+                    orgCheckboxesDiv.innerHTML = ''; // 초기화
+                    orgList.forEach(org => {
+                        const label = document.createElement('label');
+                        label.innerHTML = `<input type="checkbox" value="${org}" class="org-chk"> ${org}`;
+                        orgCheckboxesDiv.appendChild(label);
+                    });
+
+                    // 동적으로 생성된 기관명 체크박스에 이벤트 연결
+                    document.querySelectorAll('.org-chk').forEach(chk => {
+                        chk.addEventListener('change', function() {
+                            const checkedCount = document.querySelectorAll('.org-chk:checked').length;
+                            const btn = document.getElementById('orgSelectBtn');
+                            if (checkedCount === 0) {
+                                btn.innerText = '기관명 선택 ▼';
+                            } else {
+                                btn.innerText = `${checkedCount}개 기관 선택됨 ▼`;
+                            }
+                        });
                     });
 
                     if (maxInspectionDate) {
                         document.getElementById('dataRefDate').innerText = `[데이터 기준: ${maxInspectionDate} 검정완료분]`;
                     }
+
+                    // 초기 UI 상태 적용 (카테고리 강제 트리거)
+                    document.getElementById('searchCategory').dispatchEvent(new Event('change'));
 
                     applyFiltersAndRender();
                 }
@@ -276,14 +328,16 @@
 
     function applyFiltersAndRender() {
         markers.clearLayers();
-        currentFilteredRows = []; // 초기화
+        currentFilteredRows = []; 
         const category = document.getElementById('searchCategory').value;
         const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
         
-        // 체크된 지역 목록 가져오기 (배열 형태의 객체 반환)
         const checkedRegions = Array.from(document.querySelectorAll('.region-chk:checked')).map(chk => {
             return { shortName: chk.value, fullName: chk.getAttribute('data-text') };
         });
+
+        // 기관명 체크된 항목들 배열
+        const checkedOrgs = Array.from(document.querySelectorAll('.org-chk:checked')).map(chk => chk.value);
         
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
@@ -303,7 +357,15 @@
                     }
                     if (!matchAny) textMatch = false;
                 }
+            } else if (category === 'orgName') {
+                // 기관명 체크박스로 필터링
+                if (checkedOrgs.length > 0) {
+                    if (!checkedOrgs.includes(dev.orgName)) {
+                        textMatch = false;
+                    }
+                }
             } else if (keyword) {
+                // 모델명, 지점명, 제조번호 등 텍스트 검색
                 const targetValue = (dev[category] || '').toLowerCase();
                 if (!targetValue.includes(keyword)) textMatch = false;
             }
@@ -317,7 +379,7 @@
             }
 
             if (textMatch && dateMatch) {
-                currentFilteredRows.push(dev.originalRow); // 필터 통과한 원본 데이터 저장
+                currentFilteredRows.push(dev.originalRow); 
 
                 const locationKey = `${dev.lat}_${dev.lng}`;
                 if (!groupedData[locationKey]) {
@@ -414,27 +476,29 @@
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
         
-        // 체크박스 및 버튼 텍스트 초기화
+        // 지역 초기화
         document.querySelectorAll('.region-chk').forEach(chk => chk.checked = false);
         document.getElementById('regionSelectBtn').innerText = '시도 선택 ▼';
         
-        document.getElementById('searchInput').style.display = 'inline-block';
+        // 기관명 초기화
+        document.querySelectorAll('.org-chk').forEach(chk => chk.checked = false);
+        document.getElementById('orgSelectBtn').innerText = '기관명 선택 ▼';
+        
+        // 카테고리 기본값에 맞게 디스플레이 상태 수동 업데이트
+        document.getElementById('searchInput').style.display = 'none';
         document.getElementById('regionSelectContainer').style.display = 'none';
+        document.getElementById('orgSelectContainer').style.display = 'inline-block';
         
         applyFiltersAndRender();
     });
 
-    // 다운로드 버튼 클릭 이벤트 (엑셀에서 열 수 있도록 UTF-8 BOM 추가)
     document.getElementById('downloadBtn').addEventListener('click', function() {
         if (currentFilteredRows.length === 0) {
             alert("다운로드할 데이터가 없습니다.");
             return;
         }
         
-        // PapaParse를 이용해 필터링된 JSON 데이터를 다시 CSV 문자열로 변환
         const csvString = Papa.unparse(currentFilteredRows);
-        
-        // 한글 깨짐 방지를 위한 BOM(\uFEFF) 추가
         const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
