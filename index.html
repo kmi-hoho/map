@@ -39,6 +39,7 @@
         .tooltip-orange { color: #e65100; border-color: #e65100; background-color: #fffaf5; }
         .tooltip-yellow { color: #f57f17; border-color: #f57f17; background-color: #fffff0; }
         .tooltip-blue { color: #1a73e8; border-color: #1a73e8; background-color: #f4f8ff; }
+        .tooltip-green { color: #0b8043; border-color: #0b8043; background-color: #e6f4ea; }
 
         /* 다중 선택 드롭다운 공통 스타일 (기관명, 지역별 모두 적용) */
         .dropdown-container { display: none; position: relative; }
@@ -66,10 +67,8 @@
             <option value="region">지역별(시도)</option>
         </select>
         
-        <!-- 검색어 입력 (지점명, 모델명, 제조번호 선택 시 표시) -->
         <input type="text" id="searchInput" placeholder="검색어 입력" style="display: none;" />
         
-        <!-- 기관명 다중 선택 체크박스 레이어 (기본값) -->
         <div id="orgSelectContainer" class="dropdown-container">
             <div id="orgSelectBtn" class="dropdown-btn">기관명 선택 ▼</div>
             <div id="orgCheckboxes" class="dropdown-list">
@@ -77,7 +76,6 @@
             </div>
         </div>
 
-        <!-- 지역별 다중 선택 체크박스 레이어 -->
         <div id="regionSelectContainer" class="dropdown-container">
             <div id="regionSelectBtn" class="dropdown-btn">시도 선택 ▼</div>
             <div id="regionCheckboxes" class="dropdown-list">
@@ -138,6 +136,7 @@
     const orangeIcon = new L.Icon({ iconUrl: getIconUrl('orange'), ...iconOptions });
     const yellowIcon = new L.Icon({ iconUrl: getIconUrl('gold'), ...iconOptions });
     const blueIcon = new L.Icon({ iconUrl: getIconUrl('blue'), ...iconOptions });
+    const greenIcon = new L.Icon({ iconUrl: getIconUrl('green'), ...iconOptions });
 
     function formatDate(dateObj) {
         const yyyy = dateObj.getFullYear();
@@ -146,7 +145,6 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
-    // 카테고리 변경 시 UI 전환
     document.getElementById('searchCategory').addEventListener('change', function(e) {
         const val = e.target.value;
         document.getElementById('searchInput').style.display = 'none';
@@ -162,11 +160,9 @@
         }
     });
 
-    // 드롭다운 공통 제어 함수
     function setupDropdown(btnId, listId, containerId) {
         document.getElementById(btnId).addEventListener('click', function(e) {
             const list = document.getElementById(listId);
-            // 다른 열려있는 드롭다운 닫기
             document.querySelectorAll('.dropdown-list').forEach(el => {
                 if (el.id !== listId) el.style.display = 'none';
             });
@@ -186,7 +182,6 @@
     setupDropdown('regionSelectBtn', 'regionCheckboxes', 'regionSelectContainer');
     setupDropdown('orgSelectBtn', 'orgCheckboxes', 'orgSelectContainer');
 
-    // 지역 체크박스 텍스트 업데이트
     document.querySelectorAll('.region-chk').forEach(chk => {
         chk.addEventListener('change', function() {
             const checkedCount = document.querySelectorAll('.region-chk:checked').length;
@@ -220,7 +215,7 @@
                 complete: function(results) {
                     const data = results.data;
                     allDevices = [];
-                    const uniqueOrgs = new Set(); // 기관명 추출용 Set
+                    const uniqueOrgs = new Set();
                     let maxInspectionDate = ""; 
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
@@ -240,7 +235,7 @@
                         if (!isNaN(lat) && !isNaN(lng)) {
                             const address = getVal('주소') || (rowValues.length > 5 ? rowValues[5] : '');
                             const orgName = getVal('기관명');
-                            if (orgName) uniqueOrgs.add(orgName); // 고유 기관명 추가
+                            if (orgName) uniqueOrgs.add(orgName);
 
                             const validPeriodDate = getVal('검정유효기간');
                             const testDateStr = getVal('검정일') || (rowValues.length > 0 ? rowValues[rowValues.length - 1].trim() : ''); 
@@ -290,17 +285,15 @@
                         }
                     });
 
-                    // 기관명 체크박스 동적 생성
                     const orgList = Array.from(uniqueOrgs).sort();
                     const orgCheckboxesDiv = document.getElementById('orgCheckboxes');
-                    orgCheckboxesDiv.innerHTML = ''; // 초기화
+                    orgCheckboxesDiv.innerHTML = '';
                     orgList.forEach(org => {
                         const label = document.createElement('label');
                         label.innerHTML = `<input type="checkbox" value="${org}" class="org-chk"> ${org}`;
                         orgCheckboxesDiv.appendChild(label);
                     });
 
-                    // 동적으로 생성된 기관명 체크박스에 이벤트 연결
                     document.querySelectorAll('.org-chk').forEach(chk => {
                         chk.addEventListener('change', function() {
                             const checkedCount = document.querySelectorAll('.org-chk:checked').length;
@@ -317,7 +310,6 @@
                         document.getElementById('dataRefDate').innerText = `[데이터 기준: ${maxInspectionDate} 검정완료분]`;
                     }
 
-                    // 초기 UI 상태 적용 (카테고리 강제 트리거)
                     document.getElementById('searchCategory').dispatchEvent(new Event('change'));
 
                     applyFiltersAndRender();
@@ -336,7 +328,6 @@
             return { shortName: chk.value, fullName: chk.getAttribute('data-text') };
         });
 
-        // 기관명 체크된 항목들 배열
         const checkedOrgs = Array.from(document.querySelectorAll('.org-chk:checked')).map(chk => chk.value);
         
         const startDate = document.getElementById('startDate').value;
@@ -358,14 +349,12 @@
                     if (!matchAny) textMatch = false;
                 }
             } else if (category === 'orgName') {
-                // 기관명 체크박스로 필터링
                 if (checkedOrgs.length > 0) {
                     if (!checkedOrgs.includes(dev.orgName)) {
                         textMatch = false;
                     }
                 }
             } else if (keyword) {
-                // 모델명, 지점명, 제조번호 등 텍스트 검색
                 const targetValue = (dev[category] || '').toLowerCase();
                 if (!targetValue.includes(keyword)) textMatch = false;
             }
@@ -440,6 +429,9 @@
             let markerIcon = blueIcon;
             let tooltipCssClass = 'tooltip-blue';
 
+            // 모든 장비의 검정만료일이 2031년(2031-01-01) 이상인지 확인
+            const isAll2031OrLater = devices.length > 0 && devices.every(d => d.latestDate && d.latestDate >= '2031-01-01');
+
             if (group.maxUrgency === 0) {
                 markerIcon = blackIcon;
                 tooltipCssClass = 'tooltip-black';
@@ -452,6 +444,10 @@
             } else if (group.maxUrgency === 3) {
                 markerIcon = yellowIcon;
                 tooltipCssClass = 'tooltip-yellow';
+            } else if (isAll2031OrLater) {
+                // 2031년 이상인 경우 초록색 적용
+                markerIcon = greenIcon;
+                tooltipCssClass = 'tooltip-green';
             }
 
             const tooltipText = group.earliestDate !== '9999-99-99' 
@@ -476,15 +472,12 @@
         document.getElementById('startDate').value = '';
         document.getElementById('endDate').value = '';
         
-        // 지역 초기화
         document.querySelectorAll('.region-chk').forEach(chk => chk.checked = false);
         document.getElementById('regionSelectBtn').innerText = '시도 선택 ▼';
         
-        // 기관명 초기화
         document.querySelectorAll('.org-chk').forEach(chk => chk.checked = false);
         document.getElementById('orgSelectBtn').innerText = '기관명 선택 ▼';
         
-        // 카테고리 기본값에 맞게 디스플레이 상태 수동 업데이트
         document.getElementById('searchInput').style.display = 'none';
         document.getElementById('regionSelectContainer').style.display = 'none';
         document.getElementById('orgSelectContainer').style.display = 'inline-block';
